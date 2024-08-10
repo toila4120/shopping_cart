@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shopping_cart/Screen/CartScreen/Widget/CardProduct.dart';
+import 'package:shopping_cart/Screen/CartScreen/Widget/order_dialog.dart';
 import 'package:shopping_cart/Service/CartBloc.dart';
+import 'package:shopping_cart/Models/Cart.dart';
+import 'package:shopping_cart/Service/CartEvent.dart';
 import 'package:shopping_cart/Service/CartState.dart';
 
 class CartScreen extends StatefulWidget {
-  CartScreen({super.key});
+  int cartItemCount;
+  CartScreen({super.key, required this.cartItemCount});
 
   @override
   State<CartScreen> createState() => _CartScreenState();
 }
 
 class _CartScreenState extends State<CartScreen> {
+  List<Cart> listCart = [];
   @override
   Widget build(BuildContext context) {
     double width = MediaQuery.of(context).size.width;
@@ -22,12 +27,9 @@ class _CartScreenState extends State<CartScreen> {
         centerTitle: true,
         title: BlocBuilder<CartBloc, CartState>(
           builder: (context, state) {
-            final totalCount =
-                BlocProvider.of<CartBloc>(context).totalCartItemsCount;
-            return Text(
-              'Cart($totalCount)',
-              style: const TextStyle(color: Colors.white),
-            );
+            int cartItemCount = state.cartItems
+                .fold(0, (total, cartItem) => total + cartItem.quantity);
+            return Text('Cart ($cartItemCount)');
           },
         ),
       ),
@@ -38,12 +40,13 @@ class _CartScreenState extends State<CartScreen> {
               child: Text('Your cart is empty'),
             );
           }
+
           double totalPrice = state.cartItems.fold(0, (total, item) {
             return total + (item.product.price * item.quantity);
           });
 
           return Padding(
-            padding: const EdgeInsets.only(top: 8, bottom: 16),
+            padding: const EdgeInsets.only(top: 8),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -52,31 +55,40 @@ class _CartScreenState extends State<CartScreen> {
                     itemCount: state.cartItems.length,
                     itemBuilder: (context, index) {
                       final cartItem = state.cartItems[index];
-                      return CardProduct(item: cartItem);
+                      return CardProduct(
+                          key: ValueKey(cartItem.product.id), item: cartItem);
                     },
                   ),
                 ),
                 Container(
+                  decoration: const BoxDecoration(
+                      color: Color.fromARGB(255, 240, 236, 236)),
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Total price:'),
+                          const Text('Total price:'),
                           Text('\$${totalPrice.toStringAsFixed(2)}'),
                         ],
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       SizedBox(
                         width: width * 0.9,
                         child: ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () async {
+                            context.read<CartBloc>().add(RemoveCart());
+                            showDialog(
+                              context: context,
+                              builder: (context) => const OrderDialog(),
+                            );
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.orange,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                          child: const Text('Submit'),
+                          child: const Text('Order'),
                         ),
                       ),
                     ],

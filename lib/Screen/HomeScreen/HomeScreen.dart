@@ -17,16 +17,17 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
+  int cartItemCount = 0;
   List<Product> listProduct = [];
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _loadData(2);
   }
 
-  Future<void> _loadData() async {
-    await Future.delayed(const Duration(seconds: 2));
+  Future<void> _loadData(int time) async {
+    await Future.delayed(Duration(seconds: time));
     listProduct = products;
     setState(() {
       _isLoading = false;
@@ -36,7 +37,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     double size = MediaQuery.of(context).size.width;
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color.fromARGB(255, 255, 171, 64),
@@ -46,52 +46,69 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(color: Colors.white),
         ),
         actions: [
-          BlocBuilder<CartBloc, CartState>(
-            builder: (context, state) {
-              final cartItemCount =
-                  BlocProvider.of<CartBloc>(context).totalCartItemsCount;
-              return Stack(
-                children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.shopping_cart,
-                      color: Colors.white,
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => CartScreen()),
-                      );
-                    },
-                  ),
-                  if (cartItemCount > 0)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Center(
-                          child: Text(
-                            '$cartItemCount',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(
+                  Icons.shopping_cart,
+                  color: Colors.white,
+                ),
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => CartScreen(
+                              cartItemCount: cartItemCount,
+                            )),
+                  );
+                },
+              ),
+              BlocListener<CartBloc, CartState>(
+                listenWhen: (previous, current) {
+                  final previousTotalQuantity = previous.cartItems
+                      .fold(0, (total, cartItem) => total + cartItem.quantity);
+
+                  final currentTotalQuantity = current.cartItems
+                      .fold(0, (total, cartItem) => total + cartItem.quantity);
+                  return previousTotalQuantity != currentTotalQuantity;
+                },
+                listener: (context, state) {
+                  setState(() {
+                    cartItemCount =
+                        context.read<CartBloc>().totalCartItemsCount;
+                  });
+                },
+                child: BlocBuilder<CartBloc, CartState>(
+                  builder: (context, state) {
+                    return cartItemCount > 0
+                        ? Positioned(
+                            right: 8,
+                            top: 8,
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 16,
+                                minHeight: 16,
+                              ),
+                              child: Text(
+                                '$cartItemCount',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
                             ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            },
+                          )
+                        : Container();
+                  },
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -112,20 +129,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 10),
                     SizedBox(
-                      width: size,
-                      height: 215,
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: listProduct.length,
-                        scrollDirection: Axis.horizontal,
-                        itemBuilder: (context, index) {
-                          final item = listProduct[index];
-                          return Hotproduct(
-                            item: item,
-                          );
-                        },
-                      ),
-                    ),
+                        width: size,
+                        height: 215,
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: listProduct.length,
+                          scrollDirection: Axis.horizontal,
+                          itemBuilder: (context, index) {
+                            final item = listProduct[index];
+                            return Hotproduct(
+                              item: item,
+                            );
+                          },
+                        )),
                     const SizedBox(height: 20),
                     const Text(
                       'All Products',

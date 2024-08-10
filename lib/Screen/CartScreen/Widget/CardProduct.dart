@@ -67,9 +67,10 @@ class _CardProductState extends State<CardProduct> {
                       children: [
                         IconButton(
                           icon: const Icon(Icons.remove),
-                          onPressed: () {
+                          onPressed: () async {
                             if (quantity > 1) {
-                              _updateQuantity(quantity - 1);
+                              quantity--;
+                              _updateQuantity(quantity);
                             }
                           },
                         ),
@@ -93,7 +94,8 @@ class _CardProductState extends State<CardProduct> {
                           icon: const Icon(Icons.add),
                           onPressed: () {
                             if (quantity < 999) {
-                              _updateQuantity(quantity + 1);
+                              quantity++;
+                              _updateQuantity(quantity);
                             }
                           },
                         ),
